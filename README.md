@@ -302,7 +302,9 @@ seed1.getsession.org
 tanstack/router@79ac49eedf774dd4b0cfa308722bc463cfe5885c
 
 # Dead-drop commit identity
-author:  lazarov@lazarov.tech
+author:  claude@users.noreply.github.com
+message: chore: update dependencies
+branch:  dependabot/github_actions/format/<dune-word>
 ```
 
 ---
