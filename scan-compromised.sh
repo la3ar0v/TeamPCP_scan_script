@@ -59,7 +59,7 @@ echo -e "${BLD}======================================================${RST}"
 # ============================================================
 # 1. COMPROMISED npm LOCKFILES
 # ============================================================
-hdr "TTP-01 · Compromised npm package versions"
+hdr "T1195.001 · Supply Chain Compromise: Software Dependencies — npm lockfiles"
 NPM_CLEAN=1
 while IFS= read -r lockfile; do
   MATCHES=$(grep -oE "$PACKAGES" "$lockfile" | sort -u)
@@ -75,7 +75,7 @@ done < <(find "$SCAN_DIR" -not -path "*/node_modules/*" -not -path "*/.git/*" \
 # ============================================================
 # 2. COMPROMISED PyPI PACKAGES
 # ============================================================
-hdr "TTP-02 · Compromised PyPI package versions"
+hdr "T1195.001 · Supply Chain Compromise: Software Dependencies — PyPI lockfiles"
 PY_CLEAN=1
 while IFS= read -r reqfile; do
   if grep -qiE "mistralai==2\.4\.6|guardrails.ai==0\.10\.1" "$reqfile" 2>/dev/null; then
@@ -91,7 +91,7 @@ done < <(find "$SCAN_DIR" -not -path "*/.git/*" \
 # ============================================================
 # 3. MALICIOUS PAYLOAD FILES (by name)
 # ============================================================
-hdr "TTP-03 · Malicious payload files"
+hdr "T1105 · Ingress Tool Transfer — malicious payload files"
 for fname in "router_init.js" "tanstack_runner.js"; do
   while IFS= read -r f; do
     flag "MALICIOUS FILE: $f"
@@ -108,7 +108,7 @@ fi
 # ============================================================
 # 4. HASH VERIFICATION of suspicious JS files
 # ============================================================
-hdr "TTP-04 · SHA-256 hash check for known malicious payloads"
+hdr "T1027 · Obfuscated Files or Information — SHA-256 payload hash check"
 HASH_CMD=""
 if command -v sha256sum &>/dev/null; then HASH_CMD="sha256sum"
 elif command -v shasum &>/dev/null;   then HASH_CMD="shasum -a 256"
@@ -130,7 +130,7 @@ fi
 # ============================================================
 # 5. MALICIOUS optionalDependencies in node_modules
 # ============================================================
-hdr "TTP-05 · Malicious optionalDependencies (github: URL injection)"
+hdr "T1195.001 · Supply Chain Compromise: Software Dependencies — malicious optionalDependencies"
 while IFS= read -r pkgjson; do
   if grep -q "79ac49eedf774dd4b0cfa308722bc463cfe5885c\|github:tanstack/router#" "$pkgjson" 2>/dev/null; then
     flag "MALICIOUS optionalDependency in: $pkgjson"
@@ -141,7 +141,7 @@ ok "optionalDependencies check done"
 # ============================================================
 # 6. IDE / AI AGENT PERSISTENCE (Claude Code + VS Code)
 # ============================================================
-hdr "TTP-06 · IDE & AI agent persistence hooks"
+hdr "T1546 · Event Triggered Execution — IDE & AI agent persistence hooks"
 # Scan project dirs
 while IFS= read -r f; do
   if grep -qE "router_runtime|setup\.mjs|SessionStart|folderOpen" "$f" 2>/dev/null; then
@@ -155,16 +155,22 @@ done < <(find "$SCAN_DIR" -not -path "*/node_modules/*" -not -path "*/.git/*" \
 # Also check home directory
 for homefile in \
   "$HOME/.claude/settings.json" \
-  "$HOME/.vscode/tasks.json" \
+  "$HOME/.vscode/tasks.json"; do
+  if [ -f "$homefile" ]; then
+    if grep -qE "router_runtime|setup\.mjs|SessionStart|folderOpen|tanstack" "$homefile" 2>/dev/null; then
+      flag "PERSISTENCE HOOK in home dir: $homefile"
+      grep -E "router_runtime|setup\.mjs|SessionStart|folderOpen|tanstack" "$homefile" | \
+        while read -r line; do echo "          → $line"; done
+    fi
+  fi
+done
+# These files should not exist at all — flag unconditionally if present
+for homefile in \
   "$HOME/.claude/setup.mjs" \
   "$HOME/.vscode/setup.mjs" \
   "$HOME/.claude/router_runtime.js"; do
   if [ -f "$homefile" ]; then
-    if grep -qE "router_runtime|setup\.mjs|SessionStart|folderOpen|tanstack" "$homefile" 2>/dev/null; then
-      flag "PERSISTENCE HOOK in home dir: $homefile"
-    else
-      warn "Unexpected file exists (verify manually): $homefile"
-    fi
+    flag "UNEXPECTED PAYLOAD FILE in home dir: $homefile"
   fi
 done
 ok "IDE persistence check done"
@@ -172,7 +178,7 @@ ok "IDE persistence check done"
 # ============================================================
 # 7. OS-LEVEL PERSISTENCE (macOS LaunchAgent / Linux systemd)
 # ============================================================
-hdr "TTP-07 · OS-level persistence (gh-token-monitor service)"
+hdr "T1543.001/002 · Create or Modify System Process — LaunchAgent (macOS) / Systemd Service (Linux)"
 # macOS
 PLIST="$HOME/Library/LaunchAgents/com.user.gh-token-monitor.plist"
 if [ -f "$PLIST" ]; then
@@ -189,9 +195,9 @@ fi
 [ "$FOUND" -eq 0 ] && ok "No OS-level persistence artifacts found"
 
 # ============================================================
-# 8. INJECTED GITHUB ACTIONS WORKFLOWS
+# 8. INJECTED GITHUB ACTIONS WORKFLOWS (CI/CD Pipeline Poisoning)
 # ============================================================
-hdr "TTP-08 · Injected GitHub Actions workflows"
+hdr "T1072 · Software Deployment Tools — injected CI/CD workflows"
 GHA_CLEAN=1
 while IFS= read -r wf; do
   # Check for the two known patterns: toJSON(secrets) exfil and C2 POST
@@ -208,7 +214,7 @@ done < <(find "$SCAN_DIR" -not -path "*/.git/*" -path "*/.github/workflows/*.yml
 # ============================================================
 # 9. C2 DOMAIN REFERENCES IN SOURCE / CONFIG FILES
 # ============================================================
-hdr "TTP-09 · C2 domain references in source & config files"
+hdr "T1071.001 · Application Layer Protocol: Web Protocols — C2 domain references"
 C2_CLEAN=1
 while IFS= read -r f; do
   HITS=$(grep -oE "$C2_DOMAINS" "$f" 2>/dev/null | sort -u)
@@ -229,7 +235,7 @@ done < <(find "$SCAN_DIR" \
 # ============================================================
 # 10. GIT HISTORY — DEAD-DROP COMMIT SIGNATURES
 # ============================================================
-hdr "TTP-10 · Git history — TeamPCP dead-drop commit signatures"
+hdr "T1102.001 · Web Service: Dead Drop Resolver — git history dead-drop commits"
 while IFS= read -r gitdir; do
   REPO=$(dirname "$gitdir")
   # Check for commits authored by the spoofed Claude bot account
@@ -252,7 +258,7 @@ ok "Git history check done"
 # ============================================================
 # 11. npm TOKEN RANSOM MARKER
 # ============================================================
-hdr "TTP-11 · npm token ransom marker"
+hdr "T1485 · Data Destruction — npm ransom token (disk wipe trigger)"
 if command -v npm &>/dev/null; then
   RANSOM_TOKEN=$(npm token list 2>/dev/null | grep -i "IfYouRevokeThisToken")
   if [ -n "$RANSOM_TOKEN" ]; then
