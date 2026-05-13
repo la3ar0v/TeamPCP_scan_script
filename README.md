@@ -7,21 +7,21 @@
 
 ## What it does
 
-The script recursively scans every project in the target directory and checks for **11 TeamPCP TTPs** (Tactics, Techniques, and Procedures):
+The script recursively scans every project in the target directory and checks for **11 MITRE ATT&CK techniques** observed in the TeamPCP campaign:
 
-| Check | What it detects |
-|---|---|
-| **TTP-01** npm lockfiles | 170+ compromised package versions across 14 scopes (TanStack, Mistral AI, UiPath, OpenSearch…) |
-| **TTP-02** PyPI lockfiles | `mistralai==2.4.6` and `guardrails-ai==0.10.1` — both quarantined on PyPI |
-| **TTP-03** Payload files | `router_init.js`, `tanstack_runner.js`, `/tmp/transformers.pyz` dropped by the worm |
-| **TTP-04** SHA-256 hashes | Exact hash match for known payload binaries — catches renamed copies |
-| **TTP-05** Malicious `optionalDependencies` | Injected `github:` URL pointing to the attacker's fork commit (`79ac49ee…`) |
-| **TTP-06** IDE/AI persistence | Claude Code `SessionStart` hook and VS Code `folderOpen` task re-executing the payload on every project open |
-| **TTP-07** OS persistence | `gh-token-monitor` LaunchAgent (macOS) or systemd service (Linux) surviving reboots |
-| **TTP-08** Injected GHA workflows | Fake `CodeQL Analysis` workflow using `toJSON(secrets)` to POST all repository secrets to C2 |
-| **TTP-09** C2 domain references | `git-tanstack.com`, `filev2.getsession.org`, `api.masscan.cloud` in any source or config file |
-| **TTP-10** Git dead-drop commits | Commits by `claude@users.noreply.github.com` + Dune-named branches mimicking Dependabot |
-| **TTP-11** npm ransom token | Token with description `IfYouRevokeThisTokenItWillWipeTheComputerOfTheOwner` in your npm account |
+| MITRE ATT&CK | Technique | What it detects |
+|---|---|---|
+| [T1195.001](https://attack.mitre.org/techniques/T1195/001/) | Supply Chain Compromise: Software Dependencies | 170+ compromised npm package versions across 14 scopes (TanStack, Mistral AI, UiPath, OpenSearch…) |
+| [T1195.001](https://attack.mitre.org/techniques/T1195/001/) | Supply Chain Compromise: Software Dependencies | `mistralai==2.4.6` and `guardrails-ai==0.10.1` — both quarantined on PyPI |
+| [T1105](https://attack.mitre.org/techniques/T1105/) | Ingress Tool Transfer | `router_init.js`, `tanstack_runner.js`, `/tmp/transformers.pyz` dropped by the worm |
+| [T1027](https://attack.mitre.org/techniques/T1027/) | Obfuscated Files or Information | Exact SHA-256 hash match for known payload binaries — catches renamed copies |
+| [T1195.001](https://attack.mitre.org/techniques/T1195/001/) | Supply Chain Compromise: Software Dependencies | Injected `github:` URL in `optionalDependencies` pointing to attacker's fork commit (`79ac49ee…`) |
+| [T1546](https://attack.mitre.org/techniques/T1546/) | Event Triggered Execution | Claude Code `SessionStart` hook and VS Code `folderOpen` task re-executing the payload on every project open |
+| [T1543.001](https://attack.mitre.org/techniques/T1543/001/) / [T1543.002](https://attack.mitre.org/techniques/T1543/002/) | Create or Modify System Process: Launch Agent / Systemd Service | `gh-token-monitor` LaunchAgent (macOS) or systemd service (Linux) surviving reboots |
+| [T1072](https://attack.mitre.org/techniques/T1072/) | Software Deployment Tools | Fake `CodeQL Analysis` workflow using `toJSON(secrets)` to POST all repository secrets to C2 |
+| [T1071.001](https://attack.mitre.org/techniques/T1071/001/) | Application Layer Protocol: Web Protocols | `git-tanstack.com`, `filev2.getsession.org`, `api.masscan.cloud` in any source or config file |
+| [T1102.001](https://attack.mitre.org/techniques/T1102/001/) | Web Service: Dead Drop Resolver | Commits by `claude@users.noreply.github.com` + Dune-named branches mimicking Dependabot |
+| [T1485](https://attack.mitre.org/techniques/T1485/) | Data Destruction | Token with description `IfYouRevokeThisTokenItWillWipeTheComputerOfTheOwner` in your npm account |
 
 ---
 
@@ -43,7 +43,7 @@ cd ~/code
 
 ## Reading the output
 
-Each TTP section ends with a status indicator:
+Each section ends with a status indicator:
 
 | Symbol | Meaning | Action |
 |---|---|---|
